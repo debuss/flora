@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  analyse:
+    name: PHPStan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: intl, mbstring, pdo_pgsql, pdo_mysql, pdo_sqlite
+          coverage: none
+
+      - uses: ramsey/composer-install@v3
+
+      - run: composer analyse
+
+  tests:
+    name: Tests (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.4', '8.5']
+
+    # The databases of compose.yaml, on the ports phpunit.xml.dist reads them on.
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: flora
+          POSTGRES_USER: flora
+          POSTGRES_PASSWORD: flora
+        ports:
+          - 54329:5432
+        options: >-
+          --health-cmd "pg_isready --username flora"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: flora
+          MYSQL_DATABASE: flora
+        ports:
+          - 33069:3306
+        options: >-
+          --health-cmd "mysqladmin ping --host 127.0.0.1 --user root --password=flora"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: flora
+          MARIADB_DATABASE: flora
+        ports:
+          - 33079:3306
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: intl, mbstring, pdo_pgsql, pdo_mysql, pdo_sqlite
+          coverage: none
+
+      - uses: ramsey/composer-install@v3
+
+      # Integration tests are skipped when a database is unreachable: here, that is a failure.
+      - run: vendor/bin/phpunit --fail-on-skipped

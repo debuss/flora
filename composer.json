@@ -1,0 +1,64 @@
+{
+  "name": "debuss-a/flora",
+  "description": "A FaunaDB-like document store on PostgreSQL, MySQL, MariaDB and SQLite: JSON documents, indexes, sets, history and FQL-style queries in PHP.",
+  "keywords": [
+    "faunadb",
+    "fql",
+    "document-store",
+    "json",
+    "nosql",
+    "database",
+    "postgresql",
+    "mysql",
+    "mariadb",
+    "sqlite"
+  ],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Alexandre Debusschère",
+      "email": "alexandre.debusschere@hey.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Flora\\": "src/"
+    },
+    "files": [
+      "src/functions.php"
+    ]
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Flora\\Tests\\": "tests/"
+    }
+  },
+  "require": {
+    "php": "^8.4",
+    "ext-json": "*",
+    "ext-mbstring": "*",
+    "ext-pdo": "*"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^12",
+    "phpstan/phpstan": "^2.3",
+    "phpstan/phpstan-phpunit": "^2.1",
+    "phpstan/extension-installer": "^1.4"
+  },
+  "suggest": {
+    "ext-intl": "Required by Casefold().",
+    "ext-pdo_pgsql": "Required to use the PostgreSQL driver."
+  },
+  "scripts": {
+    "test": "phpunit",
+    "analyse": [
+      "phpstan analyse --configuration=phpstan.dist.neon --memory-limit=1G",
+      "phpstan analyse --configuration=phpstan.tests.neon --memory-limit=1G"
+    ]
+  },
+  "config": {
+    "allow-plugins": {
+      "phpstan/extension-installer": true
+    }
+  }
+}

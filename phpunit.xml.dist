@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         cacheDirectory=".phpunit.cache"
+         colors="true"
+         failOnWarning="true"
+         failOnRisky="true">
+    <testsuites>
+        <testsuite name="unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>src</directory>
+        </include>
+    </source>
+    <php>
+        <!-- Integration tests are skipped when the database is unreachable (see compose.yaml). -->
+        <env name="FLORA_PG_DSN" value="pgsql:host=127.0.0.1;port=54329;dbname=flora"/>
+        <env name="FLORA_PG_USER" value="flora"/>
+        <env name="FLORA_PG_PASSWORD" value="flora"/>
+        <env name="FLORA_MYSQL_DSN" value="mysql:host=127.0.0.1;port=33069;charset=utf8mb4"/>
+        <env name="FLORA_MYSQL_USER" value="root"/>
+        <env name="FLORA_MYSQL_PASSWORD" value="flora"/>
+        <env name="FLORA_MARIADB_DSN" value="mysql:host=127.0.0.1;port=33079;charset=utf8mb4"/>
+        <env name="FLORA_MARIADB_USER" value="root"/>
+        <env name="FLORA_MARIADB_PASSWORD" value="flora"/>
+        <env name="FLORA_SQLITE_DSN" value="sqlite::memory:"/>
+    </php>
+</phpunit>

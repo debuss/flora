@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: flora
+      POSTGRES_USER: flora
+      POSTGRES_PASSWORD: flora
+    ports:
+      - "54329:5432"
+
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: flora
+      MYSQL_DATABASE: flora
+    ports:
+      - "33069:3306"
+
+  mariadb:
+    image: mariadb:11.4
+    environment:
+      MARIADB_ROOT_PASSWORD: flora
+      MARIADB_DATABASE: flora
+    ports:
+      - "33079:3306"

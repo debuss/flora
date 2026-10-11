@@ -1,0 +1,6 @@
+# The library, at the strictest level. The tests run at level 8 (phpstan.tests.neon): the results of queries are mixed
+# by nature, and checking each of them would only add casts.
+parameters:
+    level: max
+    paths:
+        - src
