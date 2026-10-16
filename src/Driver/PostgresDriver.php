@@ -1040,7 +1040,7 @@ final readonly class PostgresDriver implements Driver
                 self::UNDEFINED_TABLE => new NotFound(sprintf('Collection "%s" does not exist.', $collection ?? '?'), 0, $e),
                 self::FOREIGN_KEY_VIOLATION => new NotFound('The source collection does not exist.', 0, $e),
                 self::DUPLICATE_TABLE => new AlreadyExists('A table with this name already exists in the database.', 0, $e),
-                self::UNIQUE_VIOLATION => new NotUnique('The document breaks the unique constraint of an index.', 0, $e),
+                self::UNIQUE_VIOLATION => new NotUnique(preg_match('/unique constraint "flora_idx_(\w+)"/', $e->getMessage(), $match) === 1 ? $match[1] : null, $e),
                 self::SERIALIZATION_FAILURE, self::DEADLOCK_DETECTED, self::LOCK_NOT_AVAILABLE => new Contended('The query ran into other transactions (a deadlock, a serialization failure or a lock timeout): it wrote nothing, and can be run again.', 0, $e),
                 default => $e,
             };
