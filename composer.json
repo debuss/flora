@@ -13,6 +13,7 @@
     "mariadb",
     "sqlite"
   ],
+  "homepage": "https://github.com/debuss/flora",
   "license": "MIT",
   "authors": [
     {
@@ -20,6 +21,10 @@
       "email": "alexandre.debusschere@hey.com"
     }
   ],
+  "support": {
+    "issues": "https://github.com/debuss/flora/issues",
+    "source": "https://github.com/debuss/flora"
+  },
   "autoload": {
     "psr-4": {
       "Flora\\": "src/"
