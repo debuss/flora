@@ -2,11 +2,14 @@
 
 namespace Flora\Tests\Integration;
 
+use DateTimeImmutable;
+use Flora\Cursor;
 use Flora\Exception\{AlreadyExists, InvalidArgument, NotFound, NotUnique};
-use Flora\Value\{Page, Ref as RefValue};
+use Flora\Value\{CollectionRef, Page, Ref as RefValue};
 
 use function Flora\{
     Collection,
+    Collections,
     Create,
     CreateCollection,
     CreateIndex,
@@ -67,6 +70,43 @@ abstract class IndexesTestCase extends IntegrationTestCase
         );
         self::assertTrue($this->client->query(Exists(MatchIndex(Index('users_by_value'), ['@ts' => 'oops']))));
         self::assertSame([['@ts' => 'again'], ['@ts' => 'oops']], $this->client->query(Paginate(MatchIndex(Index('users_by_tag'), 'b')))->data);
+    }
+
+    public function testCursorsTravelAsStrings(): void
+    {
+        $this->client->query(CreateIndex([
+            'name' => 'users_by_creation',
+            'source' => Collection('users'),
+            'values' => [['field' => ['data', 'created'], 'reverse' => true], ['field' => ['data', 'profile']], ['field' => ['ref']]],
+        ]));
+        foreach (range(1, 5) as $i) {
+            $this->createUsers(['created' => new DateTimeImmutable(sprintf('2026-10-0%dT12:00:00.5Z', $i)), 'profile' => ['@type' => 'Person', 'n' => $i]]);
+        }
+        $set = MatchIndex(Index('users_by_creation'));
+
+        // What a client would send back, page after page, then backwards.
+        $pages = [];
+        $after = null;
+        do {
+            $page = $this->client->query(Paginate($set, ['size' => 2, ...($after === null ? [] : ['after' => Cursor::decode($after)])]));
+            $pages[] = array_map(static fn (array $item): int => $item[1]['n'], $page->data);
+            $after = Cursor::encode($page->after);
+        } while ($after !== null);
+        $back = $this->client->query(Paginate($set, ['size' => 2, 'before' => Cursor::decode(Cursor::encode($page->before))]));
+
+        self::assertSame([[5, 4], [3, 2], [1]], $pages);
+        self::assertSame([3, 2], array_map(static fn (array $item): int => $item[1]['n'], $back->data));
+    }
+
+    public function testCursorsOfTheSchemaTravelAsStrings(): void
+    {
+        $this->client->query([CreateCollection(['name' => 'posts']), CreateCollection(['name' => 'tags'])]);
+
+        $page = $this->client->query(Paginate(Collections(), ['size' => 1]));
+        $next = $this->client->query(Paginate(Collections(), ['size' => 1, 'after' => Cursor::decode(Cursor::encode($page->after))]));
+
+        self::assertEquals([new CollectionRef('posts')], $page->data);
+        self::assertEquals([new CollectionRef('tags')], $next->data);
     }
 
     public function testIndexesAreBuiltFromExistingDocuments(): void

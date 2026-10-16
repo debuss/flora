@@ -129,6 +129,10 @@ $prev = $client->query(Paginate(MatchIndex(Index('users_by_role'), 'admin'), ['s
 - Fields are `['data', ...path]`, `['ref']` or `['ts']`. Values keep their JSON type: `36` and `"36"` are different
   terms, and numbers sort as numbers. Missing values are `null` and sort first.
 - **unique** rejects writes that would give two documents the same terms and values (`NotUnique`).
+- Cursors (`before`, `after`) are lists of values and refs. `Flora\Cursor::encode($page->after)` turns one into a
+  URL-safe string for the clients of an application, and `Cursor::decode($string)` reads it back, throwing
+  `InvalidArgument` for anything else than a cursor (both pass `null` through). The string is not signed: a client
+  may change it, but only to start a page elsewhere in the set the application paginates.
 - `Documents(Collection('users'))` is the set of all documents of a collection, sorted by ref.
 
 ```php

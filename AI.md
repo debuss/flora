@@ -112,6 +112,8 @@ $admins = MatchIndex(Index('users_by_role'), 'admin');        // one argument pe
 $page = $client->query(Paginate($admins, ['size' => 20]));    // Flora\Value\Page
 $page->data;                                                  // [[85, Ref], [36, Ref], ...]
 $next = $client->query(Paginate($admins, ['size' => 20, 'after' => $page->after]));   // after/before: null at the end
+$token = Flora\Cursor::encode($page->after);                   // URL-safe string for HTTP clients (null stays null)
+$client->query(Paginate($admins, ['after' => Flora\Cursor::decode($token)]));         // InvalidArgument if malformed
 $client->query(Get(MatchIndex(Index('users_by_email'), 'ada@example.com')));          // the first document of a set
 ```
 
