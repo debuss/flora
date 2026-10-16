@@ -73,6 +73,12 @@ $client->query(Delete($ada['ref']));                                            
 
 Refs can be stored in documents (`['author' => $ada['ref']]`), indexed and matched like any other value.
 
+Data is JSON written as PHP arrays, plus refs, instants and dates. Objects are arrays with string keys, so an empty
+object comes back as an empty list, and `stdClass` is refused: decode JSON with `json_decode($json, true)`. Data comes
+back as it was written, fields starting with `@` included: Flora tags its own values as `{"@ref": ...}`, `{"@ts": ...}`
+and `{"@date": ...}`, and stores a field of the application starting with `@` with another one (`"@type"` as
+`"@@type"`). Index paths name fields as they are written (`['data', '@type']`).
+
 Ids are [Snowflake ids](src/Id/Snowflake.php): 64-bit, sorted by creation time, generated in PHP.
 `Snowflake::createdAt($id)` tells when an id was made. `NewId()` gives one without creating a document, for a document
 whose ref is needed first.

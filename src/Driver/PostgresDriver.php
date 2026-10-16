@@ -998,7 +998,7 @@ final readonly class PostgresDriver implements Driver
     private function pathSql(IndexField $field): string
     {
         return sprintf('ARRAY[%s]::text[]', implode(', ', array_map(
-            fn (string|int $key): string => $this->pdo->quote((string) $key),
+            fn (string|int $key): string => $this->pdo->quote((string) Json::escape($key)),
             $field->dataPath(),
         )));
     }

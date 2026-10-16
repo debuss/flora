@@ -1241,7 +1241,7 @@ abstract readonly class AbstractVirtualColumnsDriver implements Driver
 
         $path = '$';
         foreach ($field->dataPath() as $key) {
-            $path .= is_int($key) ? sprintf('[%d]', $key) : '."' . addcslashes($key, '"\\') . '"';
+            $path .= is_int($key) ? sprintf('[%d]', $key) : '."' . addcslashes((string) Json::escape($key), '"\\') . '"';
         }
 
         return $this->extract($this->pdo->quote($path));
