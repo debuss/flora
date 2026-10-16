@@ -12,9 +12,9 @@ use Flora\Support\{Conversions, Json};
  *     Format('%s is %d years old', 'Ada', 36)
  *
  * A conversion is %[argument$][flags][width][.precision]type: s and S (a string, upper case), d (an integer), f, e and
- * E (a number), x, X and o (an integer in hexadecimal or octal), b (a boolean), @ (any value, written as JSON, refs and
- * instants tagged), % (a percent sign) and n (a new line). Flags are -, +, space and 0. Arguments are taken in order,
- * or by position: %2$s.
+ * E (a number), x, X and o (an integer in hexadecimal or octal), b (a boolean), @ (any value, written as JSON like
+ * documents store it: refs, instants and dates tagged, fields starting with @ given another one), % (a percent sign)
+ * and n (a new line). Flags are -, +, space and 0. Arguments are taken in order, or by position: %2$s.
  */
 final readonly class Format implements Expr
 {

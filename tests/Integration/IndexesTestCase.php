@@ -49,6 +49,26 @@ abstract class IndexesTestCase extends IntegrationTestCase
         self::assertFalse($this->client->query(Exists(MatchIndex(Index('users_by_email'), 'nobody@example.com'))));
     }
 
+    public function testIndexesReadFieldsStartingWithAt(): void
+    {
+        $this->createUsers(['@type' => 'Person', 'value' => ['@ts' => 'oops'], '@tags' => ['a', 'b']]);
+        foreach ([
+            'users_by_type' => ['terms' => [['field' => ['data', '@type']]], 'values' => [['field' => ['data', 'value']], ['field' => ['data', 'value', '@ts']]]],
+            'users_by_value' => ['terms' => [['field' => ['data', 'value']]]],
+            'users_by_tag' => ['terms' => [['field' => ['data', '@tags'], 'unroll' => true]], 'values' => [['field' => ['data', 'value']]]],
+        ] as $name => $params) {
+            $this->client->query(CreateIndex(['name' => $name, 'source' => Collection('users'), ...$params]));
+        }
+        $this->createUsers(['@type' => 'Person', 'value' => ['@ts' => 'again'], '@tags' => ['b']]);
+
+        self::assertSame(
+            [[['@ts' => 'again'], 'again'], [['@ts' => 'oops'], 'oops']],
+            $this->client->query(Paginate(MatchIndex(Index('users_by_type'), 'Person')))->data,
+        );
+        self::assertTrue($this->client->query(Exists(MatchIndex(Index('users_by_value'), ['@ts' => 'oops']))));
+        self::assertSame([['@ts' => 'again'], ['@ts' => 'oops']], $this->client->query(Paginate(MatchIndex(Index('users_by_tag'), 'b')))->data);
+    }
+
     public function testIndexesAreBuiltFromExistingDocuments(): void
     {
         $this->createUsers(['email' => 'ada@example.com']);

@@ -97,8 +97,10 @@ $client->query(Delete($alan['ref']));                                          /
 
 - A ref is `Flora\Value\Ref` (`$ref->id` is a numeric string, `$ref->collection->name`); keep refs, not ids, and store
   them in documents to link them (`['author' => $ada['ref']]`).
-- Data is JSON, plus refs, instants (`DateTimeInterface`) and dates (`Flora\Value\Date`), which come back as they went.
-  Numbers must be finite, and lists and objects nest at most 31 levels deep on MariaDB, 100 on MySQL.
+- Data is JSON as PHP arrays, plus refs, instants (`DateTimeInterface`) and dates (`Flora\Value\Date`), which come back
+  as they went, like fields starting with `@`. `stdClass` is refused: decode JSON with `json_decode($json, true)`, and
+  expect `{}` back as `[]`. Numbers must be finite, and lists and objects nest at most 31 levels deep on MariaDB, 100
+  on MySQL.
 - `NewId()` gives an id before creating the document.
 
 ## Sets and pages

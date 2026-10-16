@@ -30,7 +30,7 @@ final class Serializer
 
     public static function serialize(mixed $value): string
     {
-        return Json::encode(self::write($value));
+        return Json::raw(self::write($value));
     }
 
     public static function unserialize(string $json): mixed

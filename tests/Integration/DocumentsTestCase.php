@@ -2,6 +2,7 @@
 
 namespace Flora\Tests\Integration;
 
+use stdClass;
 use Flora\Exception\{AlreadyExists, InvalidArgument, NotFound};
 use Flora\Value\{CollectionRef, Ref as RefValue};
 
@@ -109,6 +110,36 @@ abstract class DocumentsTestCase extends IntegrationTestCase
         $fetched = $this->client->query(Get($post['ref']));
         self::assertEquals($author, $fetched['data']['author']);
         self::assertSame('Ada', $this->client->query(Get($fetched['data']['author']))['data']['name']);
+    }
+
+    public function testFieldsStartingWithAtAreReadBackAsTheyAreWritten(): void
+    {
+        $data = [
+            'instant' => ['@ts' => '2026-01-01T00:00:00Z'],
+            'ref' => ['@ref' => ['collection' => 'users', 'id' => '1']],
+            'date' => ['@date' => '2026-01-01'],
+            'invalid' => ['@ts' => 'oops'],
+            'nested' => [['@date' => ['@ts' => 'x']], ['@@ts' => 1, '@' => 2]],
+            '@type' => 'Person',
+        ];
+        $ref = $this->client->query(Create(Collection('users'), ['data' => $data]))['ref'];
+
+        // Databases may reorder the fields of objects.
+        self::assertEquals($data, $this->client->query(Get($ref))['data']);
+        self::assertTrue($this->client->query(Exists($ref)));
+
+        $updated = ['@type' => 'Thing'] + $data;
+        self::assertEquals($updated, $this->client->query(Update($ref, ['data' => ['@type' => 'Thing']]))['data']);
+        self::assertEquals($updated, $this->client->query(Get($ref))['data']);
+        self::assertEquals($updated, $this->client->query(Delete($ref))['data']);
+    }
+
+    public function testDataHoldsJsonValues(): void
+    {
+        $this->expectException(InvalidArgument::class);
+        $this->expectExceptionMessage('stdClass cannot be written as JSON');
+
+        $this->client->query(Create(Collection('users'), ['data' => ['shortcuts' => new stdClass()]]));
     }
 
     public function testAllWritesOfAQueryShareItsTimestamp(): void
