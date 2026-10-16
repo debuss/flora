@@ -53,6 +53,18 @@ enum Database: string
         };
     }
 
+    /**
+     * Has another connection work in the database of reset(), without emptying it.
+     */
+    public function enter(PDO $pdo): void
+    {
+        match ($this) {
+            self::Postgres => $pdo->exec('SET search_path TO flora_test'),
+            self::Mysql, self::Mariadb => $pdo->exec('USE flora_test'),
+            self::Sqlite => throw new LogicException('An SQLite database in memory belongs to its connection.'),
+        };
+    }
+
     public function driver(PDO $pdo): Driver
     {
         return match ($this) {

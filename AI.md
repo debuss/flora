@@ -203,7 +203,8 @@ The body sees no variable of the calling query; several arguments go to a lambda
 ## Errors
 
 All implement `Flora\Exception\FloraException`: `NotFound` (document, collection, index, function, variable, path),
-`AlreadyExists`, `NotUnique` (a unique index), `InvalidArgument` (a wrong argument, a misuse), `Aborted` (`Abort()`).
+`AlreadyExists`, `NotUnique` (a unique index), `InvalidArgument` (a wrong argument, a misuse), `Aborted` (`Abort()`),
+`Contended` (other transactions held a lock too long, or a deadlock: nothing was written, run the query again).
 
 ## Recipes
 
