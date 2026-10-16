@@ -139,7 +139,8 @@ $client->query(IfElse(Exists($ref), Get($ref), null));
 - `Select(path, value, default)` reads a path (`['data', 'tags', 0]`), throwing NotFound without a default;
   `SelectAll(path, value)` collects through lists. `ContainsPath`, `ContainsField` test a path.
 - `Map`, `Filter`, `Each` (writes for each item), `Reduce(Lambda(['acc', 'item'], ...), initial, collection)` work on
-  lists and pages; `Filter`, `Each` and `Reduce` on sets too. `Sequence(a, b)` returns the last value.
+  lists and pages; `Filter` and `Reduce` on sets too. `Each` refuses a set, whose entries would move under its writes:
+  run it on a page, `Each(Paginate($set), ...)`. `Sequence(a, b)` returns the last value.
 - `Equals`, `LT`, `LTE`, `GT`, `GTE` (numbers, strings, instants or dates of one kind), `Not`, `All`, `Any`.
 - `Add`, `Subtract`, `Multiply`, `Divide` (integers truncate), `Modulo`, `Greatest`, `Least`, `Absolute`, `Sum`,
   `Mean`.
