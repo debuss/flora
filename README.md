@@ -678,6 +678,16 @@ All exceptions implement `Flora\Exception\FloraException`: `NotFound`, `AlreadyE
 `innodb_lock_wait_timeout`, `lock_timeout`), or the database stopped it to break a deadlock. It wrote nothing and can
 be run again, or answered with a 503.
 
+`NotUnique::$index` names the unique index the write broke, to tell which value is taken:
+
+```php
+try {
+    $client->query(Create(Collection('users'), ['data' => ['username' => 'grace', 'email' => 'ada@example.com']]));
+} catch (NotUnique $e) {
+    $e->index; // "users_by_email"
+}
+```
+
 ## Drivers
 
 A database is supported by implementing [`Flora\Driver\Driver`](src/Driver/Driver.php): collection and index

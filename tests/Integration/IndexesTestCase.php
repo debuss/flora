@@ -267,6 +267,36 @@ abstract class IndexesTestCase extends IntegrationTestCase
         $this->client->query(Update($ada['ref'], ['data' => ['email' => 'grace@example.com']]));
     }
 
+    public function testNotUniqueNamesTheIndex(): void
+    {
+        foreach ([
+            'users_by_username' => ['terms' => [['field' => ['data', 'username']]]],
+            'users_by_email' => ['terms' => [['field' => ['data', 'email']]]],
+            'users_by_city_age' => ['terms' => [['field' => ['data', 'city']]], 'values' => [['field' => ['data', 'age']]]],
+            'users_by_code' => ['values' => [['field' => ['data', 'code']]]],
+            'users_by_handle' => ['terms' => [['field' => ['data', 'handles'], 'unroll' => true]]],
+        ] as $name => $params) {
+            $this->client->query(CreateIndex(['name' => $name, 'source' => Collection('users'), 'unique' => true, ...$params]));
+        }
+        $this->createUsers(['username' => 'ada', 'email' => 'ada@example.com', 'city' => 'London', 'age' => 36, 'code' => 'a', 'handles' => ['ada']]);
+
+        foreach ([
+            'users_by_username' => ['username' => 'ada'],
+            'users_by_email' => ['username' => 'grace', 'email' => 'ada@example.com'],
+            'users_by_city_age' => ['city' => 'London', 'age' => 36],
+            'users_by_code' => ['code' => 'a'],
+            'users_by_handle' => ['handles' => ['grace', 'ada']],
+        ] as $index => $data) {
+            try {
+                $this->createUsers($data);
+                self::fail(sprintf('The document should break %s.', $index));
+            } catch (NotUnique $e) {
+                self::assertSame($index, $e->index);
+                self::assertSame(sprintf('The document breaks the unique index "%s".', $index), $e->getMessage());
+            }
+        }
+    }
+
     public function testUniqueIndexesCheckExistingDocuments(): void
     {
         $this->createUsers(['email' => 'ada@example.com'], ['email' => 'ada@example.com']);

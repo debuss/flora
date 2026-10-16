@@ -41,6 +41,8 @@ final readonly class SqliteDriver extends AbstractVirtualColumnsDriver
 
     private const int CONSTRAINT = 19;
 
+    private const string UNIQUE_FAILED = 'UNIQUE constraint failed: ';
+
     protected function pdoDriver(): string
     {
         return 'sqlite';
@@ -89,7 +91,7 @@ final readonly class SqliteDriver extends AbstractVirtualColumnsDriver
         return match (true) {
             $code === self::ERROR && str_starts_with($message, 'no such table') => new NotFound(sprintf('Collection "%s" does not exist.', $collection ?? '?'), 0, $e),
             $code === self::ERROR && str_ends_with($message, 'already exists') => new AlreadyExists('A table with this name already exists in the database.', 0, $e),
-            $code === self::CONSTRAINT && str_starts_with($message, 'UNIQUE constraint failed') => new NotUnique('The document breaks the unique constraint of an index.', 0, $e),
+            $code === self::CONSTRAINT && str_starts_with($message, self::UNIQUE_FAILED) => new NotUnique(self::uniqueIndex($message), $e),
             $code === self::BUSY, $code === self::LOCKED => new Contended('The database is locked by another connection: the query wrote nothing, and can be run again.', 0, $e),
             default => null,
         };
@@ -117,6 +119,22 @@ final readonly class SqliteDriver extends AbstractVirtualColumnsDriver
     {
         // "UNIQUE constraint failed: users.id"
         return str_ends_with(self::message($e), '.id');
+    }
+
+    /**
+     * The index whose columns a unique constraint failed on: "users.flora_users_by_email_t0, ..." for the columns of the
+     * collection, "flora_entries_users_by_tag.t0, ..." for those of a table of entries.
+     */
+    private static function uniqueIndex(string $message): ?string
+    {
+        foreach (explode(', ', substr($message, strlen(self::UNIQUE_FAILED))) as $column) {
+            if (preg_match('/^flora_entries_(\w+)\./', $column, $match) === 1
+                || preg_match('/\.flora_(\w+)_(?:t\d+|v\d+_(?:type|num|str))$/', $column, $match) === 1) {
+                return $match[1];
+            }
+        }
+
+        return null;
     }
 
     /**
