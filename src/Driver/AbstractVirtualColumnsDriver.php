@@ -242,22 +242,41 @@ abstract readonly class AbstractVirtualColumnsDriver implements Driver
             return $callback();
         }
 
-        $this->pdo->beginTransaction();
+        try {
+            $this->begin();
+        } catch (PDOException $e) {
+            throw $this->translate($e, null) ?? $e;
+        }
         $this->unrolling->exchangeArray([]);
         try {
             $result = $callback();
             if ($this->inTransaction()) {
-                $this->pdo->commit();
+                $this->commit();
             }
 
             return $result;
         } catch (Throwable $e) {
             if ($this->inTransaction()) {
-                $this->pdo->rollBack();
+                $this->rollBack();
             }
 
-            throw $e;
+            throw $e instanceof PDOException ? $this->translate($e, null) ?? $e : $e;
         }
+    }
+
+    protected function begin(): void
+    {
+        $this->pdo->beginTransaction();
+    }
+
+    protected function commit(): void
+    {
+        $this->pdo->commit();
+    }
+
+    protected function rollBack(): void
+    {
+        $this->pdo->rollBack();
     }
 
     public function createCollection(string $name, int $ts, ?int $historyDays = null): bool

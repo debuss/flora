@@ -4,7 +4,7 @@ namespace Flora\Driver;
 
 use PDOException;
 use Throwable;
-use Flora\Exception\{AlreadyExists, InvalidArgument, NotFound, NotUnique};
+use Flora\Exception\{AlreadyExists, Contended, InvalidArgument, NotFound, NotUnique};
 
 /**
  * SQLite driver (3.38 and later). See AbstractVirtualColumnsDriver for how collections and indexes are stored.
@@ -16,6 +16,10 @@ use Flora\Exception\{AlreadyExists, InvalidArgument, NotFound, NotUnique};
  * always written the same way.
  *
  * Unlike MySQL and MariaDB, SQLite rolls back schema changes with the rest of the transaction.
+ *
+ * Transactions begin IMMEDIATE: a query takes the write lock before it reads, waiting for it up to the busy timeout of
+ * the connection (PDO::ATTR_TIMEOUT, 60 seconds by default). A deferred transaction that reads, then writes, would fail
+ * at once when another connection is writing: SQLite cannot make it wait without risking a deadlock.
  */
 final readonly class SqliteDriver extends AbstractVirtualColumnsDriver
 {
@@ -30,6 +34,10 @@ final readonly class SqliteDriver extends AbstractVirtualColumnsDriver
     private const string MIN_VERSION = '3.38.0';
 
     private const int ERROR = 1;
+
+    private const int BUSY = 5;
+
+    private const int LOCKED = 6;
 
     private const int CONSTRAINT = 19;
 
@@ -82,8 +90,27 @@ final readonly class SqliteDriver extends AbstractVirtualColumnsDriver
             $code === self::ERROR && str_starts_with($message, 'no such table') => new NotFound(sprintf('Collection "%s" does not exist.', $collection ?? '?'), 0, $e),
             $code === self::ERROR && str_ends_with($message, 'already exists') => new AlreadyExists('A table with this name already exists in the database.', 0, $e),
             $code === self::CONSTRAINT && str_starts_with($message, 'UNIQUE constraint failed') => new NotUnique('The document breaks the unique constraint of an index.', 0, $e),
+            $code === self::BUSY, $code === self::LOCKED => new Contended('The database is locked by another connection: the query wrote nothing, and can be run again.', 0, $e),
             default => null,
         };
+    }
+
+    /**
+     * PDO's beginTransaction() runs a deferred BEGIN (or, from PHP 8.5, what the connection was set to).
+     */
+    protected function begin(): void
+    {
+        $this->pdo->exec('BEGIN IMMEDIATE');
+    }
+
+    protected function commit(): void
+    {
+        $this->pdo->exec('COMMIT');
+    }
+
+    protected function rollBack(): void
+    {
+        $this->pdo->exec('ROLLBACK');
     }
 
     protected function isPrimaryKeyConflict(PDOException $e): bool

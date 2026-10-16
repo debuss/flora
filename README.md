@@ -672,7 +672,11 @@ Not there yet: other databases.
 ## Errors
 
 All exceptions implement `Flora\Exception\FloraException`: `NotFound`, `AlreadyExists`, `NotUnique`,
-`InvalidArgument`. A failing query rolls back all of its writes.
+`InvalidArgument`, `Aborted` and `Contended`. A failing query rolls back all of its writes.
+
+`Contended` means that the query ran into other transactions: it waited too long for a lock (SQLite's busy timeout,
+`innodb_lock_wait_timeout`, `lock_timeout`), or the database stopped it to break a deadlock. It wrote nothing and can
+be run again, or answered with a 503.
 
 ## Drivers
 
@@ -731,7 +735,10 @@ SQLite:
 - Keys are never cut, and integers keep their exact value.
 - Objects used as terms are compared as written: `{"a": 1, "b": 2}` and `{"b": 2, "a": 1}` are different terms (refs
   are always written the same way).
-- SQLite has a single writer: a query holds the database until its transaction ends.
+- SQLite has a single writer: a query holds the database until its transaction ends. Transactions begin `IMMEDIATE`:
+  a query takes the write lock before it reads, waiting for the others up to the busy timeout of the connection
+  (`PDO::ATTR_TIMEOUT`, 60 seconds by default), rather than failing when it writes after reading. Queries that only
+  read wait as well.
 
 ## Tests
 

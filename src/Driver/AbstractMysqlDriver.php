@@ -4,7 +4,7 @@ namespace Flora\Driver;
 
 use PDOException;
 use Throwable;
-use Flora\Exception\{AlreadyExists, InvalidArgument, NotFound, NotUnique};
+use Flora\Exception\{AlreadyExists, Contended, InvalidArgument, NotFound, NotUnique};
 
 /**
  * What the MySQL and MariaDB drivers share. See AbstractVirtualColumnsDriver for how collections and indexes are stored.
@@ -30,6 +30,10 @@ abstract readonly class AbstractMysqlDriver extends AbstractVirtualColumnsDriver
     private const int DUPLICATE_ENTRY = 1062;
 
     private const int NO_SUCH_TABLE = 1146;
+
+    private const int LOCK_WAIT_TIMEOUT = 1205;
+
+    private const int DEADLOCK = 1213;
 
     /** MySQL: a JSON document nested deeper than 100 levels. */
     private const int JSON_TOO_DEEP = 3157;
@@ -86,6 +90,7 @@ abstract readonly class AbstractMysqlDriver extends AbstractVirtualColumnsDriver
         return match ($e->errorInfo[1] ?? null) {
             self::NO_SUCH_TABLE => new NotFound(sprintf('Collection "%s" does not exist.', $collection ?? '?'), 0, $e),
             self::TABLE_EXISTS => new AlreadyExists('A table with this name already exists in the database.', 0, $e),
+            self::LOCK_WAIT_TIMEOUT, self::DEADLOCK => new Contended('The query ran into other transactions (a lock wait timeout or a deadlock): it wrote nothing, and can be run again.', 0, $e),
             self::DUPLICATE_ENTRY => new NotUnique('The document breaks the unique constraint of an index.', 0, $e),
             self::JSON_TOO_DEEP, self::JSON_DEPTH, self::CONSTRAINT_FAILED => new InvalidArgument('The document nests lists and objects deeper than the database accepts (MySQL: 100 levels, MariaDB: 31).', 0, $e),
             default => null,

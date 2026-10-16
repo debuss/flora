@@ -8,7 +8,7 @@ use PDO;
 use PDOException;
 use PDOStatement;
 use Throwable;
-use Flora\Exception\{AlreadyExists, InvalidArgument, NotFound, NotUnique};
+use Flora\Exception\{AlreadyExists, Contended, InvalidArgument, NotFound, NotUnique};
 use Flora\Schema\{IndexDefinition, IndexField};
 use Flora\Support\Json;
 use Flora\Value\{Branch, CollectionRef, JoinItem, JoinSet, Ref, Set, SetRef};
@@ -37,6 +37,12 @@ final readonly class PostgresDriver implements Driver
     private const string UNIQUE_VIOLATION = '23505';
 
     private const string FOREIGN_KEY_VIOLATION = '23503';
+
+    private const string SERIALIZATION_FAILURE = '40001';
+
+    private const string DEADLOCK_DETECTED = '40P01';
+
+    private const string LOCK_NOT_AVAILABLE = '55P03';
 
     /** How many documents a statement fills the entries of, when an index unrolling fields is created. */
     private const int BATCH = 100;
@@ -1035,6 +1041,7 @@ final readonly class PostgresDriver implements Driver
                 self::FOREIGN_KEY_VIOLATION => new NotFound('The source collection does not exist.', 0, $e),
                 self::DUPLICATE_TABLE => new AlreadyExists('A table with this name already exists in the database.', 0, $e),
                 self::UNIQUE_VIOLATION => new NotUnique('The document breaks the unique constraint of an index.', 0, $e),
+                self::SERIALIZATION_FAILURE, self::DEADLOCK_DETECTED, self::LOCK_NOT_AVAILABLE => new Contended('The query ran into other transactions (a deadlock, a serialization failure or a lock timeout): it wrote nothing, and can be run again.', 0, $e),
                 default => $e,
             };
         }
